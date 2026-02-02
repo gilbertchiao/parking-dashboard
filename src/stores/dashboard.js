@@ -14,7 +14,6 @@ export const useDashboardStore = defineStore('dashboard', () => {
   const floors = computed(() => data.value?.floors || null)
   const specialSlots = computed(() => data.value?.specialSlots || null)
   const gates = computed(() => data.value?.gates || null)
-  const facilities = computed(() => data.value?.facilities || null)
   const hourlyStats = computed(() => data.value?.hourlyStats || [])
   const alerts = computed(() => data.value?.alerts || [])
   const weather = computed(() => data.value?.weather || null)
@@ -67,7 +66,6 @@ export const useDashboardStore = defineStore('dashboard', () => {
     floors,
     specialSlots,
     gates,
-    facilities,
     hourlyStats,
     alerts,
     weather,

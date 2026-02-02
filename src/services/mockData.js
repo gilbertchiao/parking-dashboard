@@ -4,12 +4,19 @@ export const PARKING_CONFIG = {
   floors: ['B1', 'B2', 'B3', 'B4'],
 
   // 車格配置
+  // B1: 機車、大巴、中巴、重機、VIP汽車
+  // B2-B4: 汽車
   slots: {
-    car: { total: 1500, perFloor: [400, 400, 400, 300] },
-    motorcycle: { total: 3000, perFloor: [800, 800, 800, 600] },
-    mediumBus: { total: 11, perFloor: [3, 3, 3, 2] },
-    largeBus: { total: 5, perFloor: [2, 1, 1, 1] },
-    heavyMotorcycle: { total: 4, perFloor: [1, 1, 1, 1] },
+    car: {
+      total: 1500,
+      vipInB1: 23,  // B1 VIP 專屬車格
+      // B2, B3, B4 汽車車格分配
+      perFloor: { B2: 500, B3: 500, B4: 477 }
+    },
+    motorcycle: { total: 3000, floor: 'B1' },  // 全部在 B1
+    mediumBus: { total: 11, floor: 'B1' },     // 全部在 B1
+    largeBus: { total: 5, floor: 'B1' },       // 全部在 B1
+    heavyMotorcycle: { total: 4, floor: 'B1' }, // 全部在 B1
   },
 
   // 特殊車格
@@ -19,17 +26,19 @@ export const PARKING_CONFIG = {
     disabled: { total: 15, icon: 'wheelchair' },
   },
 
-  // 出入口
+  // 出入口（各 3 個，皆有即時串流）
   gates: {
-    car: ['A1', 'A2', 'A3', 'A4', 'A5', 'A6'],
-    motorcycle: ['M1', 'M2', 'M3', 'M4', 'M5'],
+    car: [
+      { id: 'A1', name: '汽車入口 A1', streamUrl: '/streams/car-a1.m3u8' },
+      { id: 'A2', name: '汽車入口 A2', streamUrl: '/streams/car-a2.m3u8' },
+      { id: 'A3', name: '汽車入口 A3', streamUrl: '/streams/car-a3.m3u8' },
+    ],
+    motorcycle: [
+      { id: 'M1', name: '機車入口 M1', streamUrl: '/streams/moto-m1.m3u8' },
+      { id: 'M2', name: '機車入口 M2', streamUrl: '/streams/moto-m2.m3u8' },
+      { id: 'M3', name: '機車入口 M3', streamUrl: '/streams/moto-m3.m3u8' },
+    ],
   },
-
-  // 設施
-  facilities: {
-    elevators: 10,
-    stairs: 6,
-  }
 }
 
 // 產生隨機數值（帶波動）
@@ -37,15 +46,47 @@ function randomBetween(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min
 }
 
-// 產生各樓層車位使用狀況
-function generateFloorOccupancy(type) {
-  const config = PARKING_CONFIG.slots[type]
-  const floors = PARKING_CONFIG.floors
+// 產生樓層車位使用狀況（新設計）
+function generateFloorData() {
+  // B1: 機車、大巴、中巴、重機、VIP汽車
+  const b1Data = {
+    floor: 'B1',
+    vehicleTypes: {
+      motorcycle: {
+        total: PARKING_CONFIG.slots.motorcycle.total,
+        occupied: randomBetween(2000, 2800),
+      },
+      largeBus: {
+        total: PARKING_CONFIG.slots.largeBus.total,
+        occupied: randomBetween(2, 5),
+      },
+      mediumBus: {
+        total: PARKING_CONFIG.slots.mediumBus.total,
+        occupied: randomBetween(5, 10),
+      },
+      heavyMotorcycle: {
+        total: PARKING_CONFIG.slots.heavyMotorcycle.total,
+        occupied: randomBetween(1, 4),
+      },
+      vipCar: {
+        total: PARKING_CONFIG.slots.car.vipInB1,
+        occupied: randomBetween(10, 20),
+      },
+    },
+  }
 
-  return floors.map((floor, index) => {
-    const total = config.perFloor[index]
-    // 模擬不同樓層的使用率（B1 最高，B4 最低）
-    const baseRate = 0.8 - (index * 0.15)
+  // 計算 B1 各類型使用率
+  Object.keys(b1Data.vehicleTypes).forEach(type => {
+    const data = b1Data.vehicleTypes[type]
+    data.available = data.total - data.occupied
+    data.rate = Math.round((data.occupied / data.total) * 100)
+  })
+
+  // B2, B3, B4: 汽車
+  const carFloors = ['B2', 'B3', 'B4'].map((floor, index) => {
+    const total = PARKING_CONFIG.slots.car.perFloor[floor]
+    // 模擬不同樓層的使用率（B2 最高，B4 最低）
+    const baseRate = 0.75 - (index * 0.15)
     const variance = 0.1
     const rate = Math.min(Math.max(baseRate + (Math.random() * variance * 2 - variance), 0.1), 0.95)
     const occupied = Math.floor(total * rate)
@@ -58,49 +99,31 @@ function generateFloorOccupancy(type) {
       rate: Math.round(rate * 100)
     }
   })
+
+  return {
+    b1: b1Data,
+    carFloors,
+  }
 }
 
-// 產生出入口狀態
-function generateGateStatus(gateIds) {
-  return gateIds.map(id => {
+// 產生出入口狀態（含串流資訊）
+function generateGateStatus(gateConfigs) {
+  return gateConfigs.map(gate => {
     const statusRandom = Math.random()
     let status = 'normal'
     if (statusRandom > 0.95) status = 'fault'
     else if (statusRandom > 0.85) status = 'busy'
 
     return {
-      id,
+      id: gate.id,
+      name: gate.name,
+      streamUrl: gate.streamUrl,
       status,
       flow: status === 'fault' ? 0 : randomBetween(5, 80),
       entryCount: randomBetween(50, 200),
       exitCount: randomBetween(40, 180),
     }
   })
-}
-
-// 產生電梯狀態
-function generateElevatorStatus(count) {
-  const floors = ['B1', 'B2', 'B3', 'B4']
-  return Array.from({ length: count }, (_, i) => {
-    const statusRandom = Math.random()
-    let status = 'running'
-    if (statusRandom > 0.95) status = 'fault'
-    else if (statusRandom > 0.9) status = 'maintenance'
-
-    return {
-      id: `E${i + 1}`,
-      status,
-      currentFloor: status === 'fault' ? '--' : floors[randomBetween(0, 3)],
-    }
-  })
-}
-
-// 產生樓梯狀態
-function generateStairStatus(count) {
-  return Array.from({ length: count }, (_, i) => ({
-    id: `S${i + 1}`,
-    status: Math.random() > 0.98 ? 'blocked' : 'normal',
-  }))
 }
 
 // 產生特殊車格狀態
@@ -157,8 +180,8 @@ function generateHourlyStats() {
 // 產生告警訊息
 function generateAlerts() {
   const alertTypes = [
-    { level: 'danger', messages: ['E4 電梯故障待修', 'A5 出口閘門異常', 'B2 消防警報觸發'] },
-    { level: 'warning', messages: ['汽車車位剩餘不足 10%', 'A3 出口車流量偏高', 'B1 機車區即將滿位'] },
+    { level: 'danger', messages: ['A1 出口閘門異常', 'B2 消防警報觸發', 'M2 機車入口故障'] },
+    { level: 'warning', messages: ['汽車車位剩餘不足 10%', 'A2 出口車流量偏高', 'B1 機車區即將滿位'] },
     { level: 'info', messages: ['系統運作正常', '今日已服務 2,847 車次', '充電樁 #3 充電完成'] },
   ]
 
@@ -212,18 +235,21 @@ function generateTrafficStatus() {
 
 // 匯出模擬資料產生函式
 export function generateMockData() {
-  const carFloors = generateFloorOccupancy('car')
-  const motorcycleFloors = generateFloorOccupancy('motorcycle')
+  const floorData = generateFloorData()
 
-  // 計算總和
-  const carTotal = carFloors.reduce((sum, f) => sum + f.total, 0)
-  const carOccupied = carFloors.reduce((sum, f) => sum + f.occupied, 0)
-  const motorcycleTotal = motorcycleFloors.reduce((sum, f) => sum + f.total, 0)
-  const motorcycleOccupied = motorcycleFloors.reduce((sum, f) => sum + f.occupied, 0)
+  // 計算汽車總和（B1 VIP + B2-B4）
+  const carTotal = PARKING_CONFIG.slots.car.vipInB1 +
+    floorData.carFloors.reduce((sum, f) => sum + f.total, 0)
+  const carOccupied = floorData.b1.vehicleTypes.vipCar.occupied +
+    floorData.carFloors.reduce((sum, f) => sum + f.occupied, 0)
 
-  // 巴士統計
-  const busTotal = PARKING_CONFIG.slots.mediumBus.total + PARKING_CONFIG.slots.largeBus.total
-  const busOccupied = randomBetween(Math.floor(busTotal * 0.5), busTotal - 1)
+  // 機車總和（全在 B1）
+  const motorcycleTotal = floorData.b1.vehicleTypes.motorcycle.total
+  const motorcycleOccupied = floorData.b1.vehicleTypes.motorcycle.occupied
+
+  // 巴士總和（全在 B1）
+  const busTotal = floorData.b1.vehicleTypes.largeBus.total + floorData.b1.vehicleTypes.mediumBus.total
+  const busOccupied = floorData.b1.vehicleTypes.largeBus.occupied + floorData.b1.vehicleTypes.mediumBus.occupied
 
   return {
     timestamp: Date.now(),
@@ -250,25 +276,16 @@ export function generateMockData() {
       },
     },
 
-    // 各樓層狀況
-    floors: {
-      car: carFloors,
-      motorcycle: motorcycleFloors,
-    },
+    // 各樓層狀況（新結構）
+    floors: floorData,
 
     // 特殊車格
     specialSlots: generateSpecialSlots(),
 
-    // 出入口狀態
+    // 出入口狀態（含串流資訊）
     gates: {
       car: generateGateStatus(PARKING_CONFIG.gates.car),
       motorcycle: generateGateStatus(PARKING_CONFIG.gates.motorcycle),
-    },
-
-    // 設施狀態
-    facilities: {
-      elevators: generateElevatorStatus(PARKING_CONFIG.facilities.elevators),
-      stairs: generateStairStatus(PARKING_CONFIG.facilities.stairs),
     },
 
     // 今日統計
