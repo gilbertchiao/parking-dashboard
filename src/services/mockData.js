@@ -1,6 +1,6 @@
 // 停車場基本配置
 export const PARKING_CONFIG = {
-  name: '台北智慧停車場',
+  name: '新北智慧停車場',
   floors: ['B1', 'B2', 'B3', 'B4'],
 
   // 車格配置
@@ -222,14 +222,52 @@ function generateWeather() {
   }
 }
 
-// 產生道路擁擠度
+// 產生道路擁擠度（3 個出入口各自的狀況）
 function generateTrafficStatus() {
   const levels = ['smooth', 'normal', 'congested']
-  const levelIndex = Math.random() > 0.7 ? 2 : Math.random() > 0.4 ? 1 : 0
+  const descriptions = ['順暢', '普通', '壅塞']
+
+  // 為每個汽車出入口產生獨立的道路狀況
+  const gates = PARKING_CONFIG.gates.car.map(gate => {
+    const levelIndex = Math.random() > 0.7 ? 2 : Math.random() > 0.4 ? 1 : 0
+    return {
+      id: gate.id,
+      name: gate.name,
+      level: levels[levelIndex],
+      description: descriptions[levelIndex],
+    }
+  })
+
+  return gates
+}
+
+// 產生今日入場車輛身份統計
+function generateVehicleIdentityStats() {
+  // 身份類型：臨停、月租、公務車、員工、其他
+  const totalVehicles = randomBetween(800, 1500)
+
+  // 各類型比例（模擬真實情況）
+  const monthlyRate = randomBetween(35, 45) / 100  // 月租 35-45%
+  const tempRate = randomBetween(25, 35) / 100     // 臨停 25-35%
+  const employeeRate = randomBetween(10, 15) / 100 // 員工 10-15%
+  const officialRate = randomBetween(5, 10) / 100  // 公務車 5-10%
+  // 其他為剩餘
+
+  const monthly = Math.round(totalVehicles * monthlyRate)
+  const temp = Math.round(totalVehicles * tempRate)
+  const employee = Math.round(totalVehicles * employeeRate)
+  const official = Math.round(totalVehicles * officialRate)
+  const other = totalVehicles - monthly - temp - employee - official
 
   return {
-    level: levels[levelIndex],
-    description: ['順暢', '普通', '壅塞'][levelIndex],
+    total: totalVehicles,
+    categories: [
+      { name: '臨停', value: temp, color: '#3b82f6' },
+      { name: '月租', value: monthly, color: '#22c55e' },
+      { name: '公務車', value: official, color: '#f59e0b' },
+      { name: '員工', value: employee, color: '#8b5cf6' },
+      { name: '其他', value: other, color: '#6b7280' },
+    ]
   }
 }
 
@@ -297,7 +335,10 @@ export function generateMockData() {
     // 天氣
     weather: generateWeather(),
 
-    // 道路狀況
+    // 道路狀況（3 個出入口）
     traffic: generateTrafficStatus(),
+
+    // 今日入場車輛身份統計
+    vehicleIdentity: generateVehicleIdentityStats(),
   }
 }

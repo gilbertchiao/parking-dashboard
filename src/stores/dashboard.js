@@ -17,7 +17,8 @@ export const useDashboardStore = defineStore('dashboard', () => {
   const hourlyStats = computed(() => data.value?.hourlyStats || [])
   const alerts = computed(() => data.value?.alerts || [])
   const weather = computed(() => data.value?.weather || null)
-  const traffic = computed(() => data.value?.traffic || null)
+  const traffic = computed(() => data.value?.traffic || [])
+  const vehicleIdentity = computed(() => data.value?.vehicleIdentity || null)
 
   // 今日累計
   const todayTotal = computed(() => {
@@ -70,6 +71,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     alerts,
     weather,
     traffic,
+    vehicleIdentity,
     todayTotal,
 
     // 方法

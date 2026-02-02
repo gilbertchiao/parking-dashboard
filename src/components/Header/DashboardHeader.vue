@@ -15,7 +15,7 @@
     </div>
 
     <!-- 中間資訊 -->
-    <div class="flex items-center gap-8">
+    <div class="flex items-center gap-6">
       <!-- 即時時間 -->
       <div class="text-center">
         <div class="text-2xl font-number font-bold text-white">{{ currentTime }}</div>
@@ -33,12 +33,21 @@
         </div>
       </div>
 
-      <!-- 道路狀況 -->
-      <div v-if="traffic" class="flex items-center gap-3 px-4 py-2 bg-dashboard-bg rounded-lg">
-        <div :class="['status-dot w-4 h-4', trafficStatusClass]"></div>
-        <div>
-          <div class="text-sm font-medium text-white">周邊道路</div>
-          <div :class="['text-lg font-bold', trafficTextClass]">{{ traffic.description }}</div>
+      <!-- 道路狀況（3 個出入口） -->
+      <div class="flex items-center gap-2 px-4 py-2 bg-dashboard-bg rounded-lg">
+        <div class="text-xs text-dashboard-muted mr-2">周邊道路</div>
+        <div
+          v-for="gate in traffic"
+          :key="gate.id"
+          class="flex flex-col items-center px-3 py-1 rounded bg-dashboard-card"
+        >
+          <div class="text-xs text-dashboard-muted">{{ gate.id }}</div>
+          <div class="flex items-center gap-1">
+            <div :class="['w-2 h-2 rounded-full', getTrafficDotClass(gate.level)]"></div>
+            <span :class="['text-sm font-bold', getTrafficTextClass(gate.level)]">
+              {{ gate.description }}
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -103,23 +112,21 @@ const weatherIcon = computed(() => {
 })
 
 // 道路狀況樣式
-const trafficStatusClass = computed(() => {
-  if (!traffic.value) return ''
+function getTrafficDotClass(level) {
   const classes = {
-    smooth: 'normal',
-    normal: 'warning',
-    congested: 'danger',
+    smooth: 'bg-dashboard-success',
+    normal: 'bg-dashboard-warning',
+    congested: 'bg-dashboard-danger animate-pulse',
   }
-  return classes[traffic.value.level]
-})
+  return classes[level] || 'bg-dashboard-success'
+}
 
-const trafficTextClass = computed(() => {
-  if (!traffic.value) return ''
+function getTrafficTextClass(level) {
   const classes = {
     smooth: 'text-dashboard-success',
     normal: 'text-dashboard-warning',
     congested: 'text-dashboard-danger',
   }
-  return classes[traffic.value.level]
-})
+  return classes[level] || 'text-dashboard-success'
+}
 </script>

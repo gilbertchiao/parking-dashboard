@@ -43,7 +43,7 @@
           </div>
         </div>
 
-        <!-- 右側欄（保留空間給未來擴充） -->
+        <!-- 右側欄 -->
         <div class="col-span-3 flex flex-col gap-4">
           <!-- 統計摘要卡片 -->
           <div class="dashboard-card">
@@ -71,9 +71,9 @@
           </div>
 
           <!-- 車位使用率排行 -->
-          <div class="flex-1 dashboard-card">
+          <div class="dashboard-card">
             <h2 class="text-lg font-bold text-white mb-4">車位使用率</h2>
-            <div class="space-y-4">
+            <div class="space-y-3">
               <div v-for="item in usageRanking" :key="item.type" class="flex items-center gap-3">
                 <span class="text-2xl">{{ item.icon }}</span>
                 <div class="flex-1">
@@ -92,6 +92,11 @@
                 </div>
               </div>
             </div>
+          </div>
+
+          <!-- 今日入場車輛身份統計 -->
+          <div class="flex-1">
+            <VehicleIdentity />
           </div>
         </div>
       </div>
@@ -114,6 +119,7 @@ import GateMonitor from './components/GateMonitor/GateMonitor.vue'
 import SpecialSlots from './components/SpecialSlots/SpecialSlots.vue'
 import Statistics from './components/Statistics/Statistics.vue'
 import AlertBar from './components/AlertBar/AlertBar.vue'
+import VehicleIdentity from './components/VehicleIdentity/VehicleIdentity.vue'
 
 const store = useDashboardStore()
 const isLoading = computed(() => store.isLoading)
